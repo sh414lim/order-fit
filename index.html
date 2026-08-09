@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OrderFit | 발주 관리</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="src/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <a class="brand" href="#dashboard"><span class="brand-mark">O</span><span>orderfit</span></a>
+        <nav aria-label="주 메뉴">
+          <button class="nav-item active" data-page="dashboard"><span>⌂</span>대시보드</button>
+          <button class="nav-item" data-page="receipts"><span>▣</span>영수증 관리</button>
+          <button class="nav-item" data-page="vendors"><span>⌘</span>업체 관리</button>
+          <button class="nav-item" data-page="items"><span>◫</span>품목 관리</button>
+          <button class="nav-item" data-page="inventory"><span>◰</span>재고 관리</button>
+        </nav>
+        <div class="sidebar-footer"><div class="avatar">김</div><div><strong>김민지</strong><small>한결 다이닝 · 관리자</small></div></div>
+      </aside>
+      <main>
+        <header class="topbar"><div><p class="eyebrow">한결 다이닝</p><h1 id="page-title">좋은 아침이에요, 민지님</h1></div><div class="top-actions"><button class="icon-button" aria-label="알림">♧<i></i></button><button class="primary-button" id="upload-button">＋ 영수증 등록</button></div></header>
+        <section id="page-content"></section>
+      </main>
+    </div>
+    <dialog id="receipt-dialog">
+      <form method="dialog" class="dialog-card">
+        <button class="close-button" value="cancel" aria-label="닫기">×</button>
+        <p class="eyebrow">영수증 등록</p><h2>사진을 올려주세요</h2><p class="muted">OCR이 업체, 품목, 수량과 금액을 추출한 뒤 검토 화면으로 안내합니다.</p>
+        <label class="dropzone" for="receipt-file"><span>⌁</span><strong>사진을 선택하거나 이곳에 끌어 놓으세요</strong><small>JPG, PNG, PDF · 최대 20MB</small><input id="receipt-file" type="file" accept="image/*,.pdf" /></label>
+        <button class="primary-button wide" id="start-ocr" value="default" disabled>OCR 분석 시작</button>
+      </form>
+    </dialog>
+    <script src="src/app.js"></script>
+  </body>
+</html>
