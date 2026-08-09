@@ -40,6 +40,7 @@
       <form method="dialog" class="dialog-card">
         <button class="close-button" value="cancel" aria-label="닫기">×</button>
         <p class="eyebrow">영수증 등록</p><h2>사진을 올려주세요</h2><p class="muted">OCR이 업체, 품목, 수량과 금액을 추출한 뒤 검토 화면으로 안내합니다.</p>
+        <div class="receipt-fields"><label>발주 날짜<input id="receipt-date" type="date" value="2026-08-09" /></label><label>업체<select id="receipt-vendor"><option>푸른식자재</option><option>한성정육</option><option>그린패키지</option><option>기타 업체</option></select></label></div>
         <label class="dropzone" for="receipt-file"><span>⌁</span><strong>사진을 선택하거나 이곳에 끌어 놓으세요</strong><small>JPG, PNG, PDF · 최대 20MB</small><input id="receipt-file" type="file" accept="image/*,.pdf" /></label>
         <button class="primary-button wide" id="start-ocr" value="default" disabled>OCR 분석 시작</button>
       </form>
