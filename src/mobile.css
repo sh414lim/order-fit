@@ -1,5 +1,17 @@
 /* Narrow-phone layout: protects readability down to 320px CSS width. */
 @media (max-width: 375px) {
+  main,
+  .panel,
+  .review-card,
+  .metric-card,
+  .grid > * {
+    min-width: 0;
+  }
+
+  .table-wrap {
+    max-width: 100%;
+  }
+
   .topbar {
     align-items: stretch;
     flex-direction: column;
