@@ -1,0 +1,98 @@
+/* Mobile-first experience layer */
+@media (max-width: 620px) {
+  :root { --canvas:#f7f8fa; --line:#e8ebef; --ink:#17211e; }
+
+  body { font-size:14px; background:var(--canvas); -webkit-font-smoothing:antialiased; }
+  .app-shell { display:block; min-height:100dvh; }
+  .sidebar { height:58px; background:#173c33; padding:0 18px; }
+  .sidebar .brand { font-size:19px; gap:8px; }
+  .brand-mark { width:24px; height:24px; }
+
+  main { padding:20px 16px 100px; overflow-x:clip; }
+  .topbar { margin:0 0 20px; gap:12px; align-items:center; }
+  .topbar .eyebrow { font-size:10px; margin-bottom:3px; }
+  .topbar h1 { font-size:22px; letter-spacing:-1px; line-height:1.25; }
+  .top-actions { flex:0 0 auto; }
+  .top-actions .primary-button { width:42px; height:42px; padding:0; font-size:0; border-radius:14px; box-shadow:0 6px 14px #176b4f2e; }
+  .top-actions .primary-button::before { content:'+'; font-size:26px; font-weight:400; line-height:1; }
+
+  .mobile-nav { height:78px; padding:8px 8px calc(8px + env(safe-area-inset-bottom)); border-color:#e6e9ed; box-shadow:0 -8px 24px #13251b12; }
+  .mobile-nav .nav-item { min-height:54px; font-size:10px; color:#87908d; }
+  .mobile-nav .nav-item span { font-size:19px; }
+  .mobile-nav .nav-item.active span { padding:3px 10px; }
+
+  .metrics { gap:10px; margin-bottom:14px; }
+  .metric-card { min-height:112px; padding:15px; border-radius:17px; border-color:#e9ecef; box-shadow:0 2px 6px #17211e05; }
+  .metric-card p { margin-bottom:8px; font-size:12px; line-height:1.3; }
+  .metric-card strong { font-size:19px; letter-spacing:-.8px; }
+  .metric-card small { font-size:11px; line-height:1.4; }
+
+  .grid,.two-columns,.bottom-grid { gap:12px; }
+  .bottom-grid { margin-top:12px; }
+  .panel { padding:18px; border-radius:18px; border-color:#e8ebef; box-shadow:0 2px 7px #17211e05; }
+  .panel-heading { gap:10px; }
+  .panel-heading h2 { font-size:18px; }
+  .panel-heading .primary-button { min-height:40px; padding:9px 12px; font-size:12px; white-space:nowrap; }
+  .eyebrow { font-size:10px; }
+  .primary-button,.secondary-button { min-height:44px; border-radius:12px; }
+  .text-button { min-height:38px; padding:5px 0; }
+
+  .chart { height:196px; margin-top:16px; }
+  .chart-scale { font-size:10px; }
+  .bars { border-radius:0 0 10px 0; }
+  .alert-row { min-height:62px; }
+  .alert-row strong { font-size:13px; }
+  .insight { padding:15px 0; }
+
+  .vendor-summary,.zone-header { gap:12px; margin-bottom:16px; }
+  .vendor-summary h2,.zone-header h2 { font-size:22px; line-height:1.25; }
+  .vendor-summary .muted,.zone-header .muted { font-size:13px; line-height:1.5; }
+  .zone-switcher { padding:4px; border-radius:14px; }
+  .zone-switcher button { min-height:42px; border-radius:10px; }
+  .vendor-card { padding:18px; border-radius:18px; }
+  .vendor-card-top h2 { font-size:19px; }
+  .vendor-items span { padding:6px 8px; }
+  .vendor-card .detail-link { display:flex; align-items:center; justify-content:space-between; width:100%; padding-top:10px; border-top:1px solid var(--line); }
+
+  .item-list { gap:10px; }
+  .item-list-card { padding:17px; border-radius:17px; }
+  .item-main h2 { font-size:18px; }
+  .item-cost strong { font-size:14px; }
+  .item-list-card .detail-link { min-height:36px; }
+
+  .detail-heading { padding:2px 2px 0; margin-bottom:18px; }
+  .back-button { min-height:36px; color:#5c6d65; }
+  .detail-heading h2 { font-size:27px; }
+  .detail-kpis { gap:9px; margin-bottom:14px; }
+  .detail-kpis article { padding:14px; min-height:91px; border-radius:15px; }
+  .detail-kpis strong { font-size:16px; line-height:1.3; }
+  .detail-grid { gap:10px; margin-top:12px; }
+
+  /* Wide data tables become vertically scannable transaction cards. */
+  .table-wrap { overflow:visible; margin:0 -2px; }
+  .table-wrap table { display:block; margin-top:12px; width:100%; }
+  .table-wrap thead { display:none; }
+  .table-wrap tbody { display:grid; gap:9px; }
+  .table-wrap tr { display:grid; grid-template-columns:1fr 1fr; gap:8px 14px; padding:14px; border:1px solid #edf0f2; border-radius:14px; background:#fafbfb; }
+  .table-wrap td { padding:0; border:0; white-space:normal; font-size:12px; }
+  .table-wrap td:first-child { grid-column:1 / -1; font-size:14px; }
+  .table-wrap td:last-child { text-align:right; }
+  .table-wrap td:nth-child(2)::before { content:'업체 · '; color:var(--muted); }
+  .table-wrap td:nth-child(3)::before { content:'수량 · '; color:var(--muted); }
+  .table-wrap td:nth-child(4)::before { content:'단가 · '; color:var(--muted); }
+  .table-wrap td:nth-child(5)::before { content:'금액 · '; color:var(--muted); }
+  .table-wrap td:nth-child(6)::before { content:'상태 · '; color:var(--muted); }
+  .table-wrap td .text-button { min-height:24px; }
+
+  dialog { width:calc(100% - 32px); margin:auto; border-radius:20px; }
+  .dialog-card { padding:26px 20px 20px; }
+  .dropzone { padding:26px 14px; }
+}
+
+@media (max-width: 375px) {
+  main { padding-left:14px; padding-right:14px; }
+  .topbar h1 { font-size:20px; }
+  .metric-card { min-height:104px; }
+  .panel { padding:16px; }
+  .table-wrap tr { gap:7px 10px; padding:12px; }
+}
