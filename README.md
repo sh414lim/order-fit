@@ -20,3 +20,7 @@ python3 -m http.server 8080
 - 대시보드 지표와 발주 내역 검색
 
 상세 제품·데이터·API 설계는 [docs/product-design.md](docs/product-design.md)에서 확인할 수 있습니다.
+
+## Supabase 백엔드
+
+운영용 PostgreSQL 스키마, Row Level Security, 영수증 Storage 정책, 재고 원장과 영수증 확정 RPC를 [supabase](supabase) 폴더에 추가했습니다. 실제 프로젝트 연결과 마이그레이션 적용 절차는 [docs/supabase-setup.md](docs/supabase-setup.md)를 참고하세요.

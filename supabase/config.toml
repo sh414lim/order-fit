@@ -1,0 +1,15 @@
+project_id = "orderfit"
+
+[api]
+enabled = true
+schemas = ["public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[auth]
+enabled = true
+site_url = "http://localhost:8080"
+additional_redirect_urls = ["https://orderfit-omega.vercel.app"]
+
+[storage]
+enabled = true
