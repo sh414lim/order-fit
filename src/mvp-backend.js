@@ -10,6 +10,18 @@
   const koreanStatus = { uploaded: '검토 필요', processing: '검토 필요', review_required: '검토 필요', confirmed: '확정', rejected: '반려' };
   const dbStatus = { '검토 필요': 'review_required', '확정': 'confirmed', '반려': 'rejected' };
   const toast = (message, type = '') => { const element = document.getElementById('mvp-toast'); element.textContent = message; element.className = `mvp-toast show ${type}`; setTimeout(() => { element.className = 'mvp-toast'; }, 3500); };
+  const validCredentials = (email, password, message) => {
+    if (!/^\S+@\S+\.\S+$/.test(email)) { message.textContent = '올바른 이메일 주소를 입력해 주세요.'; return false; }
+    if (password.length < 8) { message.textContent = '비밀번호는 8자 이상 입력해 주세요.'; return false; }
+    return true;
+  };
+  const authErrorMessage = error => {
+    const text = error?.message || '';
+    if (/invalid login credentials/i.test(text)) return '이메일 또는 비밀번호가 올바르지 않습니다.';
+    if (/already registered|already been registered/i.test(text)) return '이미 등록된 이메일입니다. 로그인을 시도해 주세요.';
+    if (/email.*not.*confirmed/i.test(text)) return '이메일 인증을 완료한 뒤 로그인해 주세요.';
+    return '인증 요청에 실패했습니다. 잠시 후 다시 시도해 주세요.';
+  };
   const activePage = () => document.querySelector('.nav-item.active')?.dataset.page || 'dashboard';
   const formatDate = value => String(value).replaceAll('-', '.');
   const databaseError = (error, fallback) => { console.error(error); toast(error?.message || fallback, 'error'); };
@@ -152,9 +164,10 @@
     const email = document.getElementById('auth-email').value.trim();
     const password = document.getElementById('auth-password').value;
     const message = document.getElementById('auth-message');
+    if (!validCredentials(email, password, message)) return;
     message.textContent = '로그인 중…';
     const { data, error } = await client.auth.signInWithPassword({ email, password });
-    if (error) { message.textContent = error.message; return; }
+    if (error) { message.textContent = authErrorMessage(error); return; }
     document.getElementById('auth-dialog').close();
     await startAuthenticatedApp(data.session);
   }
@@ -163,8 +176,9 @@
     const email = document.getElementById('auth-email').value.trim();
     const password = document.getElementById('auth-password').value;
     const message = document.getElementById('auth-message');
+    if (!validCredentials(email, password, message)) return;
     const { data, error } = await client.auth.signUp({ email, password, options: { data: { display_name: email.split('@')[0] }, emailRedirectTo: window.location.origin } });
-    if (error) { message.textContent = error.message; return; }
+    if (error) { message.textContent = authErrorMessage(error); return; }
     message.textContent = data.session ? '계정이 생성되었습니다.' : '확인 이메일을 열어 계정을 활성화한 뒤 로그인해 주세요.';
   }
 
