@@ -1,0 +1,3 @@
+-- Existing remote bro-gym migration baseline.
+-- This no-op file reconciles the local migration directory with the linked
+-- project's already-applied migration history. Do not add OrderFit DDL here.

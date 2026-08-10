@@ -2,13 +2,17 @@
 
 ## 포함된 백엔드 구성
 
-- [초기 마이그레이션](../supabase/migrations/20260809000000_orderfit_initial.sql)
+- [초기 마이그레이션](../supabase/migrations/20260810000000_timefit_initial.sql)
 - Supabase Auth 기반 사용자 프로필과 조직 멤버십
 - 조직 단위 RLS 정책 및 관리자/매니저 권한
 - 업체, 품목, 업체별 품목 별칭, 영수증, OCR 행, 재고 원장, 감사 로그
 - 비공개 `timefit_receipts` Storage 버킷과 조직별 파일 접근 정책
 - 영수증 확정 RPC: `timefit_confirm_receipt(receipt_id)`
 - 업체 월별 합계·현재고 조회 뷰
+
+## 기존 프로젝트 공존 규칙
+
+현재 연결된 `bro-gym` 프로젝트에 추가 적용하는 구조다. 기존 테이블 및 함수와 충돌하지 않도록 모든 새 테이블·enum·함수·뷰·Storage 버킷은 `timefit_` 접두사를 사용한다. SQL 식별자에서 하이픈은 매번 따옴표가 필요하므로 `timefit-` 대신 `timefit_`을 사용한다.
 
 ## 로컬 설정
 
