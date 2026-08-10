@@ -10,6 +10,7 @@
 
   const koreanStatus = { uploaded: '검토 필요', processing: '검토 필요', review_required: '검토 필요', confirmed: '확정', rejected: '반려' };
   const dbStatus = { '검토 필요': 'review_required', '확정': 'confirmed', '반려': 'rejected' };
+  const roleLabel = { admin: '관리자', manager: '매니저', kitchen: '주방', hall: '홀', staff: '직원' };
   const toast = (message, type = '') => { const element = document.getElementById('mvp-toast'); element.textContent = message; element.className = `mvp-toast show ${type}`; setTimeout(() => { element.className = 'mvp-toast'; }, 3500); };
   const validCredentials = (email, password, message) => {
     if (!/^\S+@\S+\.\S+$/.test(email)) { message.textContent = '올바른 이메일 주소를 입력해 주세요.'; return false; }
@@ -37,9 +38,10 @@
   const activePage = () => document.querySelector('.nav-item.active')?.dataset.page || 'dashboard';
   const formatDate = value => String(value).replaceAll('-', '.');
   const databaseError = (error, fallback) => { console.error(error); toast(error?.message || fallback, 'error'); };
+  const canManageOrders = () => ['admin', 'manager'].includes(context.organization?.role);
 
   async function resolveOrganization() {
-    const { data, error } = await client.from('timefit_organization_members').select('organization_id, role, timefit_organizations(id,name)').eq('user_id', context.user.id).limit(1).maybeSingle();
+    const { data, error } = await client.from('orderfit_user_roles').select('organization_id, role, timefit_organizations(id,name)').eq('user_id', context.user.id).limit(1).maybeSingle();
     if (error) throw error;
     if (!data) return null;
     return { id: data.organization_id, role: data.role, name: data.timefit_organizations.name };
@@ -100,8 +102,9 @@
     const date = document.getElementById('receipt-date').value;
     const vendorName = document.getElementById('receipt-vendor').value;
     try {
-      const vendor = await ensureVendor(vendorName);
-      const { data: receipt, error: receiptError } = await client.from('timefit_receipts').insert({ organization_id: context.organization.id, vendor_id: vendor.id, vendor_name_raw: vendor.name, receipt_date: date, status: 'review_required', uploaded_by: context.user.id }).select().single();
+      const savedVendor = context.vendors.find(entry => entry.name.toLowerCase() === vendorName.toLowerCase());
+      const vendor = savedVendor || (canManageOrders() ? await ensureVendor(vendorName) : null);
+      const { data: receipt, error: receiptError } = await client.from('timefit_receipts').insert({ organization_id: context.organization.id, vendor_id: vendor?.id || null, vendor_name_raw: vendor?.name || vendorName, receipt_date: date, status: 'review_required', uploaded_by: context.user.id }).select().single();
       if (receiptError) throw receiptError;
       let imagePath = '';
       if (file.type.startsWith('image/')) {
@@ -122,6 +125,7 @@
 
   async function confirmReceiptInDatabase(id) {
     if (!context.ready) return;
+    if (!canManageOrders()) { toast('발주 검토와 확정은 관리자 또는 매니저만 할 수 있습니다.', 'error'); return; }
     const receipt = state.receipts.find(entry => String(entry.id) === String(id));
     if (!receipt) return;
     try {
@@ -165,9 +169,9 @@
 
   async function startAuthenticatedApp(session) {
     context.user = session.user;
-    document.getElementById('account-button').textContent = '로그아웃';
     context.organization = await resolveOrganization();
     if (!context.organization) { document.getElementById('organization-dialog').showModal(); return; }
+    document.getElementById('account-button').textContent = `로그아웃 · ${roleLabel[context.organization.role] || '직원'}`;
     await loadData();
   }
 
