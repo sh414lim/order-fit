@@ -42,6 +42,16 @@ async function currentUser(req) {
   );
   return rows[0] || null;
 }
+async function currentMembership(req, roles = []) {
+  const user = await currentUser(req);
+  if (!user) return null;
+  const { rows } = await database().query(
+    `select m.organization_id, m.role, o.name as organization_name from public.orderfit_user_memberships m join public.timefit_organizations o on o.id=m.organization_id where m.user_id=$1 order by m.created_at asc limit 1`, [user.id]
+  );
+  const membership = rows[0];
+  if (!membership || (roles.length && !roles.includes(membership.role))) return null;
+  return { user, ...membership };
+}
 function validCredentials(email, password) { return /^\S+@\S+\.\S+$/.test(email) && typeof password === 'string' && password.length >= 8; }
 
-module.exports = { clearSessionCookie, createSession, currentUser, passwordHash, setSessionCookie, validCredentials, verifyPassword };
+module.exports = { clearSessionCookie, createSession, currentMembership, currentUser, passwordHash, setSessionCookie, validCredentials, verifyPassword };

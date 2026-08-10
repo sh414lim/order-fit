@@ -52,23 +52,12 @@
 
   async function loadData() {
     if (!context.organization) return;
-    const orgId = context.organization.id;
-    const [{ data: vendors, error: vendorsError }, { data: items, error: itemsError }, { data: receipts, error: receiptsError }, { data: lines, error: linesError }, { data: inventory, error: inventoryError }] = await Promise.all([
-      client.from('timefit_vendors').select('*').eq('organization_id', orgId).eq('is_active', true).order('name'),
-      client.from('timefit_items').select('*').eq('organization_id', orgId).eq('is_active', true).order('name'),
-      client.from('timefit_receipts').select('*').eq('organization_id', orgId).order('receipt_date', { ascending: false }),
-      client.from('timefit_receipt_lines').select('*').eq('organization_id', orgId).order('sort_order'),
-      client.from('timefit_inventory_transactions').select('item_id,quantity_delta').eq('organization_id', orgId)
-    ]);
-    if (vendorsError || itemsError || receiptsError || linesError || inventoryError) throw vendorsError || itemsError || receiptsError || linesError || inventoryError;
-    context.vendors = vendors || [];
-    context.items = items || [];
-    const linesByReceipt = (lines || []).reduce((map, line) => { (map[line.receipt_id] ||= []).push(line); return map; }, {});
+    const { organization, vendors = [], items = [], receipts = [], lines = [], inventory = [] } = await api('/api/order-data');
+    context.organization = organization; context.vendors = vendors; context.items = items;
+    const linesByReceipt = lines.reduce((map, line) => { (map[line.receipt_id] ||= []).push(line); return map; }, {});
     const vendorById = new Map(context.vendors.map(vendor => [vendor.id, vendor]));
-    const stockByItem = (inventory || []).reduce((map, row) => { map[row.item_id] = (map[row.item_id] || 0) + Number(row.quantity_delta); return map; }, {});
-    const nextReceipts = await Promise.all((receipts || []).map(async receipt => ({
-      id: receipt.id, vendor: vendorById.get(receipt.vendor_id)?.name || receipt.vendor_name_raw || '업체 확인 필요', date: formatDate(receipt.receipt_date), total: Number(receipt.total_amount), status: koreanStatus[receipt.status] || '검토 필요', lines: (linesByReceipt[receipt.id] || []).length, imageUrl: await signedImage(receipt.image_path), items: (linesByReceipt[receipt.id] || []).map(line => line.raw_name), db: receipt
-    })));
+    const stockByItem = inventory.reduce((map, row) => { map[row.item_id] = (map[row.item_id] || 0) + Number(row.quantity_delta); return map; }, {});
+    const nextReceipts = receipts.map(receipt => ({ id: receipt.id, vendor: vendorById.get(receipt.vendor_id)?.name || receipt.vendor_name || '업체 확인 필요', date: formatDate(receipt.receipt_date), total: Number(receipt.total_amount), status: koreanStatus[receipt.status] || '검토 필요', lines: (linesByReceipt[receipt.id] || []).length, imageUrl: receipt.image_data || '', items: (linesByReceipt[receipt.id] || []).map(line => line.name), db: receipt }));
     state.receipts.splice(0, state.receipts.length, ...nextReceipts);
     state.inventory.splice(0, state.inventory.length, ...context.items.map(item => ({ name: item.name, category: item.category || '미분류', stock: stockByItem[item.id] || 0, unit: item.base_unit, minimum: Number(item.minimum_stock), usage: 0, vendor: '' })));
     document.getElementById('organization-label').textContent = context.organization.name;
@@ -99,21 +88,8 @@
     const date = document.getElementById('receipt-date').value;
     const vendorName = document.getElementById('receipt-vendor').value;
     try {
-      const savedVendor = context.vendors.find(entry => entry.name.toLowerCase() === vendorName.toLowerCase());
-      const vendor = savedVendor || (canManageOrders() ? await ensureVendor(vendorName) : null);
-      const { data: receipt, error: receiptError } = await client.from('timefit_receipts').insert({ organization_id: context.organization.id, vendor_id: vendor?.id || null, vendor_name_raw: vendor?.name || vendorName, receipt_date: date, status: 'review_required', uploaded_by: context.user.id }).select().single();
-      if (receiptError) throw receiptError;
-      let imagePath = '';
-      if (file.type.startsWith('image/')) {
-        const extension = file.name.split('.').pop() || 'jpg';
-        imagePath = `${context.organization.id}/${receipt.id}/original.${extension}`;
-        const { error: uploadError } = await client.storage.from('timefit_receipts').upload(imagePath, file, { upsert: false, contentType: file.type });
-        if (uploadError) throw uploadError;
-        const { error: imageUpdateError } = await client.from('timefit_receipts').update({ image_path: imagePath }).eq('id', receipt.id);
-        if (imageUpdateError) throw imageUpdateError;
-      }
-      const { error: lineError } = await client.from('timefit_receipt_lines').insert({ receipt_id: receipt.id, organization_id: context.organization.id, raw_name: 'OCR 분석 대기', normalized_name: 'OCR 분석 대기', zone: 'kitchen', quantity: 1, unit: '개', unit_price: 0, amount: 0, sort_order: 0 });
-      if (lineError) throw lineError;
+      const imageData = file.type.startsWith('image/') ? await new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = reject; reader.readAsDataURL(file); }) : '';
+      await api('/api/receipts', { method: 'POST', body: JSON.stringify({ vendorName, receiptDate: date, imageData }) });
       document.getElementById('receipt-dialog').close();
       await loadData();
       toast('영수증을 등록했습니다. 품목과 금액을 검토해 확정하세요.');
@@ -129,17 +105,7 @@
       const rawNames = [...document.querySelectorAll('.review-name')].map(input => input.value.trim()).filter(Boolean);
       const amounts = [...document.querySelectorAll('.review-amount')].map(input => Number(input.value.replaceAll(',', '')) || 0);
       if (!rawNames.length) throw new Error('최소 한 개의 품목이 필요합니다.');
-      const vendor = await ensureVendor(document.getElementById('review-vendor').value.trim() || receipt.vendor);
-      const receiptDate = document.getElementById('review-date').value;
-      const lines = await Promise.all(rawNames.map(async (name, index) => ({ receipt_id: id, organization_id: context.organization.id, item_id: (await ensureItem(name)).id, raw_name: name, normalized_name: name, zone: 'kitchen', quantity: 1, unit: '개', unit_price: amounts[index], amount: amounts[index], sort_order: index })));
-      const { error: receiptError } = await client.from('timefit_receipts').update({ vendor_id: vendor.id, vendor_name_raw: vendor.name, receipt_date: receiptDate, status: 'review_required' }).eq('id', id);
-      if (receiptError) throw receiptError;
-      const { error: deleteError } = await client.from('timefit_receipt_lines').delete().eq('receipt_id', id);
-      if (deleteError) throw deleteError;
-      const { error: linesError } = await client.from('timefit_receipt_lines').insert(lines);
-      if (linesError) throw linesError;
-      const { error: confirmError } = await client.rpc('timefit_confirm_receipt', { target_receipt_id: id });
-      if (confirmError) throw confirmError;
+      await api('/api/receipts/confirm', { method: 'POST', body: JSON.stringify({ receiptId: id, vendorName: document.getElementById('review-vendor').value.trim() || receipt.vendor, receiptDate: document.getElementById('review-date').value, lines: rawNames.map((name, index) => ({ name, amount: amounts[index], quantity: 1, unit: '개', zone: 'kitchen' })) }) });
       await loadData();
       toast('발주를 확정하고 재고 입고에 반영했습니다.');
     } catch (error) { databaseError(error, '발주 확정에 실패했습니다.'); }
@@ -159,10 +125,7 @@
     try { context.organization = (await api('/api/organization', { method: 'POST', body: JSON.stringify({ name }) })).organization; }
     catch (error) { message.textContent = error.message; return; }
     document.getElementById('organization-dialog').close();
-    context.ready = true;
-    document.getElementById('organization-label').textContent = context.organization.name;
-    document.getElementById('account-button').textContent = '로그아웃 · 관리자';
-    render(activePage());
+    await loadData();
     toast('매장 설정을 완료했습니다.');
   }
 
@@ -171,9 +134,7 @@
     context.organization = await resolveOrganization();
     if (!context.organization) { document.getElementById('organization-dialog').showModal(); return; }
     document.getElementById('account-button').textContent = `로그아웃 · ${roleLabel[context.organization.role] || '직원'}`;
-    context.ready = true;
-    document.getElementById('organization-label').textContent = context.organization.name;
-    render(activePage());
+    await loadData();
   }
 
   async function authenticate(event) {
