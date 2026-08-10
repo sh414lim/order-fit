@@ -49,11 +49,12 @@
     </dialog>
     <dialog id="auth-dialog" class="auth-dialog">
       <form class="auth-card" id="auth-form">
-        <p class="eyebrow">OrderFit MVP</p><h2>관리자 로그인</h2><p class="muted">발주 기록과 영수증을 안전하게 관리합니다.</p>
+        <p class="eyebrow">OrderFit MVP</p><h2 id="auth-title">관리자 로그인</h2><p class="muted" id="auth-description">발주 기록과 영수증을 안전하게 관리합니다.</p>
         <label>이메일<input id="auth-email" type="email" autocomplete="email" required placeholder="manager@restaurant.com" /></label>
         <label>비밀번호<input id="auth-password" type="password" autocomplete="current-password" required minlength="8" placeholder="8자 이상" /></label>
+        <label class="signup-only" id="password-confirmation-field" hidden>비밀번호 확인<input id="auth-password-confirmation" type="password" autocomplete="new-password" minlength="8" placeholder="비밀번호를 한 번 더 입력" /></label>
         <p class="auth-message" id="auth-message"></p>
-        <button class="primary-button wide" type="submit">로그인</button>
+        <button class="primary-button wide" id="auth-submit" type="submit">로그인</button>
         <button class="text-button wide" id="signup-button" type="button">새 관리자 계정 만들기</button>
       </form>
     </dialog>

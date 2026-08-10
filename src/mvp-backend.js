@@ -5,6 +5,7 @@
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_K-YKPSyZpOmMo9CupeWLwA_X_CpLL_T';
   const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
   const context = { user: null, organization: null, vendors: [], items: [], ready: false };
+  let authMode = 'login';
   window.OrderFitBackend = { client, context };
 
   const koreanStatus = { uploaded: '검토 필요', processing: '검토 필요', review_required: '검토 필요', confirmed: '확정', rejected: '반려' };
@@ -21,6 +22,17 @@
     if (/already registered|already been registered/i.test(text)) return '이미 등록된 이메일입니다. 로그인을 시도해 주세요.';
     if (/email.*not.*confirmed/i.test(text)) return '이메일 인증을 완료한 뒤 로그인해 주세요.';
     return '인증 요청에 실패했습니다. 잠시 후 다시 시도해 주세요.';
+  };
+  const setAuthMode = mode => {
+    authMode = mode;
+    const isSignup = mode === 'signup';
+    document.getElementById('auth-title').textContent = isSignup ? '관리자 계정 만들기' : '관리자 로그인';
+    document.getElementById('auth-description').textContent = isSignup ? '첫 매장을 생성한 계정은 관리자로 등록됩니다.' : '발주 기록과 영수증을 안전하게 관리합니다.';
+    document.getElementById('auth-submit').textContent = isSignup ? '관리자 계정 만들기' : '로그인';
+    document.getElementById('signup-button').textContent = isSignup ? '로그인 화면으로 돌아가기' : '새 관리자 계정 만들기';
+    document.getElementById('password-confirmation-field').hidden = !isSignup;
+    document.getElementById('auth-password').autocomplete = isSignup ? 'new-password' : 'current-password';
+    document.getElementById('auth-message').textContent = '';
   };
   const activePage = () => document.querySelector('.nav-item.active')?.dataset.page || 'dashboard';
   const formatDate = value => String(value).replaceAll('-', '.');
@@ -172,18 +184,22 @@
     await startAuthenticatedApp(data.session);
   }
 
-  async function signUp() {
+  async function signUp(event) {
+    event?.preventDefault();
     const email = document.getElementById('auth-email').value.trim();
     const password = document.getElementById('auth-password').value;
+    const confirmation = document.getElementById('auth-password-confirmation').value;
     const message = document.getElementById('auth-message');
     if (!validCredentials(email, password, message)) return;
+    if (password !== confirmation) { message.textContent = '비밀번호 확인이 일치하지 않습니다.'; return; }
     const { data, error } = await client.auth.signUp({ email, password, options: { data: { display_name: email.split('@')[0] }, emailRedirectTo: window.location.origin } });
     if (error) { message.textContent = authErrorMessage(error); return; }
-    message.textContent = data.session ? '계정이 생성되었습니다.' : '확인 이메일을 열어 계정을 활성화한 뒤 로그인해 주세요.';
+    if (data.session) { document.getElementById('auth-dialog').close(); await startAuthenticatedApp(data.session); return; }
+    message.textContent = '인증 이메일을 보냈습니다. 이메일 인증 후 로그인해 주세요.';
   }
 
-  document.getElementById('auth-form').addEventListener('submit', authenticate);
-  document.getElementById('signup-button').addEventListener('click', signUp);
+  document.getElementById('auth-form').addEventListener('submit', event => authMode === 'signup' ? signUp(event) : authenticate(event));
+  document.getElementById('signup-button').addEventListener('click', () => setAuthMode(authMode === 'login' ? 'signup' : 'login'));
   document.getElementById('organization-form').addEventListener('submit', completeOrganization);
   document.getElementById('account-button').addEventListener('click', async () => {
     if (context.user) { await client.auth.signOut(); context.user = null; context.ready = false; document.getElementById('account-button').textContent = '로그인'; document.getElementById('auth-dialog').showModal(); }
