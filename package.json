@@ -1,0 +1,8 @@
+{
+  "name": "orderfit",
+  "private": true,
+  "version": "1.0.0",
+  "dependencies": {
+    "pg": "^8.16.3"
+  }
+}

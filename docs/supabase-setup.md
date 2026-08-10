@@ -3,7 +3,7 @@
 ## 포함된 백엔드 구성
 
 - [초기 마이그레이션](../supabase/migrations/20260810000000_timefit_initial.sql)
-- Supabase Auth 기반 사용자 프로필과 조직 멤버십
+- `orderfit_user_*` 독립 계정·세션 기반 사용자 프로필과 조직 멤버십
 - 조직 단위 RLS 정책 및 관리자/매니저 권한
 - 업체, 품목, 업체별 품목 별칭, 영수증, OCR 행, 재고 원장, 감사 로그
 - 비공개 `timefit_receipts` Storage 버킷과 조직별 파일 접근 정책
@@ -50,11 +50,11 @@ https://orderfit-omega.vercel.app
 
 기존 `bro-gym`의 Site URL은 그대로 유지한다. OrderFit 회원가입은 `emailRedirectTo`로 현재 OrderFit 도메인을 요청하므로, 위 URL만 추가하면 기존 서비스의 기본 인증 흐름을 바꾸지 않는다.
 
-## 이메일 인증 없이 관리자 회원가입 사용
+## 독립 회원가입·로그인
 
-OrderFit의 사용자·권한 데이터는 `orderfit_user_profiles`, `orderfit_user_roles`로 분리된다. 첫 매장을 생성한 사용자는 `admin` 역할을 받으며, 관리자는 `orderfit_user_assign_role` RPC로 같은 매장의 다른 사용자에게 `manager`, `kitchen`, `hall`, `staff` 역할을 줄 수 있다.
+OrderFit의 회원가입과 로그인은 Supabase Auth가 아니라 `orderfit_user_accounts`, `orderfit_user_sessions`, `orderfit_user_memberships` 테이블과 Vercel 서버 API로 처리한다. 비밀번호는 서버에서 scrypt 해시로 저장하고, 브라우저에는 HttpOnly 세션 쿠키만 남긴다. 따라서 Supabase 이메일 인증 설정과 관계없이 가입 직후 로그인할 수 있다.
 
-Supabase의 `Enable email confirmations` 설정은 **프로젝트 전체**에 적용된다. 현재 프로젝트는 `bro-gym`과 공유되므로 이 옵션을 끄면 기존 gym 회원가입에도 이메일 인증이 적용되지 않는다. 영향이 허용되는 경우에만 Supabase Dashboard → Authentication → Providers → Email에서 `Confirm email`을 끈다.
+Vercel에는 서버 전용 `DATABASE_URL`을 Sensitive Production 환경 변수로 설정해야 한다. 이 값은 브라우저 코드·Git에 노출하지 않는다.
 
 ## 영수증 처리 흐름
 

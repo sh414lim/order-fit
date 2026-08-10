@@ -1,0 +1,2 @@
+-- This version was already applied in the shared Supabase project.
+-- Kept as a no-op locally to preserve the existing remote migration history.

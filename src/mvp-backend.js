@@ -1,5 +1,5 @@
-/* Supabase-backed MVP adapter. The publishable key is safe for browser use; RLS
-   in the database enforces organization membership and role permissions. */
+/* Order data currently uses Supabase RLS. Account creation and login are
+   standalone OrderFit server sessions, with no email-confirmation dependency. */
 (function () {
   const SUPABASE_URL = 'https://nzxgcfwranspxynzyglb.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_K-YKPSyZpOmMo9CupeWLwA_X_CpLL_T';
@@ -11,18 +11,17 @@
   const koreanStatus = { uploaded: '검토 필요', processing: '검토 필요', review_required: '검토 필요', confirmed: '확정', rejected: '반려' };
   const dbStatus = { '검토 필요': 'review_required', '확정': 'confirmed', '반려': 'rejected' };
   const roleLabel = { admin: '관리자', manager: '매니저', kitchen: '주방', hall: '홀', staff: '직원' };
+  const api = async (path, options = {}) => {
+    const response = await fetch(path, { ...options, headers: { 'Content-Type': 'application/json', ...(options.headers || {}) } });
+    const payload = response.status === 204 ? {} : await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload.message || '요청을 처리할 수 없습니다.');
+    return payload;
+  };
   const toast = (message, type = '') => { const element = document.getElementById('mvp-toast'); element.textContent = message; element.className = `mvp-toast show ${type}`; setTimeout(() => { element.className = 'mvp-toast'; }, 3500); };
   const validCredentials = (email, password, message) => {
     if (!/^\S+@\S+\.\S+$/.test(email)) { message.textContent = '올바른 이메일 주소를 입력해 주세요.'; return false; }
     if (password.length < 8) { message.textContent = '비밀번호는 8자 이상 입력해 주세요.'; return false; }
     return true;
-  };
-  const authErrorMessage = error => {
-    const text = error?.message || '';
-    if (/invalid login credentials/i.test(text)) return '이메일 또는 비밀번호가 올바르지 않습니다.';
-    if (/already registered|already been registered/i.test(text)) return '이미 등록된 이메일입니다. 로그인을 시도해 주세요.';
-    if (/email.*not.*confirmed/i.test(text)) return '이메일 인증을 완료한 뒤 로그인해 주세요.';
-    return '인증 요청에 실패했습니다. 잠시 후 다시 시도해 주세요.';
   };
   const setAuthMode = mode => {
     authMode = mode;
@@ -41,10 +40,8 @@
   const canManageOrders = () => ['admin', 'manager'].includes(context.organization?.role);
 
   async function resolveOrganization() {
-    const { data, error } = await client.from('orderfit_user_roles').select('organization_id, role, timefit_organizations(id,name)').eq('user_id', context.user.id).limit(1).maybeSingle();
-    if (error) throw error;
-    if (!data) return null;
-    return { id: data.organization_id, role: data.role, name: data.timefit_organizations.name };
+    const { organization } = await api('/api/organization');
+    return organization;
   }
 
   async function signedImage(path) {
@@ -159,20 +156,24 @@
     const message = document.getElementById('organization-message');
     if (!name) return;
     message.textContent = '매장을 생성하고 있습니다…';
-    const { data, error } = await client.rpc('timefit_bootstrap_organization', { organization_name: name });
-    if (error) { message.textContent = error.message; return; }
-    context.organization = { id: data, name, role: 'admin' };
+    try { context.organization = (await api('/api/organization', { method: 'POST', body: JSON.stringify({ name }) })).organization; }
+    catch (error) { message.textContent = error.message; return; }
     document.getElementById('organization-dialog').close();
-    await loadData();
-    toast('매장 설정을 완료했습니다. 첫 영수증을 등록해 보세요.');
+    context.ready = true;
+    document.getElementById('organization-label').textContent = context.organization.name;
+    document.getElementById('account-button').textContent = '로그아웃 · 관리자';
+    render(activePage());
+    toast('매장 설정을 완료했습니다.');
   }
 
-  async function startAuthenticatedApp(session) {
-    context.user = session.user;
+  async function startAuthenticatedApp(user) {
+    context.user = user;
     context.organization = await resolveOrganization();
     if (!context.organization) { document.getElementById('organization-dialog').showModal(); return; }
     document.getElementById('account-button').textContent = `로그아웃 · ${roleLabel[context.organization.role] || '직원'}`;
-    await loadData();
+    context.ready = true;
+    document.getElementById('organization-label').textContent = context.organization.name;
+    render(activePage());
   }
 
   async function authenticate(event) {
@@ -182,10 +183,8 @@
     const message = document.getElementById('auth-message');
     if (!validCredentials(email, password, message)) return;
     message.textContent = '로그인 중…';
-    const { data, error } = await client.auth.signInWithPassword({ email, password });
-    if (error) { message.textContent = authErrorMessage(error); return; }
-    document.getElementById('auth-dialog').close();
-    await startAuthenticatedApp(data.session);
+    try { const { user } = await api('/api/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }); document.getElementById('auth-dialog').close(); await startAuthenticatedApp(user); }
+    catch (error) { message.textContent = error.message; }
   }
 
   async function signUp(event) {
@@ -196,20 +195,18 @@
     const message = document.getElementById('auth-message');
     if (!validCredentials(email, password, message)) return;
     if (password !== confirmation) { message.textContent = '비밀번호 확인이 일치하지 않습니다.'; return; }
-    const { data, error } = await client.auth.signUp({ email, password, options: { data: { display_name: email.split('@')[0] }, emailRedirectTo: window.location.origin } });
-    if (error) { message.textContent = authErrorMessage(error); return; }
-    if (data.session) { document.getElementById('auth-dialog').close(); await startAuthenticatedApp(data.session); return; }
-    message.textContent = '인증 이메일을 보냈습니다. 이메일 인증 후 로그인해 주세요.';
+    message.textContent = '계정을 만들고 있습니다…';
+    try { const { user } = await api('/api/auth/signup', { method: 'POST', body: JSON.stringify({ email, password, displayName: email.split('@')[0] }) }); document.getElementById('auth-dialog').close(); await startAuthenticatedApp(user); }
+    catch (error) { message.textContent = error.message; }
   }
 
   document.getElementById('auth-form').addEventListener('submit', event => authMode === 'signup' ? signUp(event) : authenticate(event));
   document.getElementById('signup-button').addEventListener('click', () => setAuthMode(authMode === 'login' ? 'signup' : 'login'));
   document.getElementById('organization-form').addEventListener('submit', completeOrganization);
   document.getElementById('account-button').addEventListener('click', async () => {
-    if (context.user) { await client.auth.signOut(); context.user = null; context.ready = false; document.getElementById('account-button').textContent = '로그인'; document.getElementById('auth-dialog').showModal(); }
+    if (context.user) { await api('/api/auth/logout', { method: 'POST' }); context.user = null; context.ready = false; document.getElementById('account-button').textContent = '로그인'; setAuthMode('login'); document.getElementById('auth-dialog').showModal(); }
     else document.getElementById('auth-dialog').showModal();
   });
 
-  client.auth.onAuthStateChange((_event, session) => { if (!session && context.user) { context.user = null; context.ready = false; document.getElementById('auth-dialog').showModal(); } });
-  client.auth.getSession().then(({ data, error }) => { if (error) databaseError(error, '세션을 불러올 수 없습니다.'); else if (data.session) startAuthenticatedApp(data.session).catch(error => databaseError(error, '매장 데이터를 불러올 수 없습니다.')); else document.getElementById('auth-dialog').showModal(); });
+  api('/api/auth/me').then(({ user }) => user ? startAuthenticatedApp(user).catch(error => databaseError(error, '매장 데이터를 불러올 수 없습니다.')) : document.getElementById('auth-dialog').showModal()).catch(() => document.getElementById('auth-dialog').showModal());
 }());
