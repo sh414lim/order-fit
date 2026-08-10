@@ -23,4 +23,4 @@ python3 -m http.server 8080
 
 ## Supabase 백엔드
 
-운영용 PostgreSQL 스키마, Row Level Security, 영수증 Storage 정책, 재고 원장과 영수증 확정 RPC를 [supabase](supabase) 폴더에 추가했습니다. 실제 프로젝트 연결과 마이그레이션 적용 절차는 [docs/supabase-setup.md](docs/supabase-setup.md)를 참고하세요.
+운영용 PostgreSQL 스키마, Row Level Security, 영수증 Storage 정책, 재고 원장과 영수증 확정 RPC를 [supabase](supabase) 폴더에 추가했습니다. 기존 프로젝트와 충돌하지 않도록 모든 리소스는 `timefit_` 접두사를 사용합니다. 실제 프로젝트 연결과 마이그레이션 적용 절차는 [docs/supabase-setup.md](docs/supabase-setup.md)를 참고하세요.
