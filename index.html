@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="src/mobile.css" />
     <link rel="stylesheet" href="src/mobile-ux.css" />
     <link rel="stylesheet" href="src/receipt-workflow.css" />
+    <link rel="stylesheet" href="src/mvp-backend.css" />
   </head>
   <body>
     <div class="app-shell">
@@ -26,7 +27,7 @@
         <div class="sidebar-footer"><div class="avatar">김</div><div><strong>김민지</strong><small>한결 다이닝 · 관리자</small></div></div>
       </aside>
       <main>
-        <header class="topbar"><div><p class="eyebrow">한결 다이닝</p><h1 id="page-title">좋은 아침이에요, 민지님</h1></div><div class="top-actions"><button class="icon-button" aria-label="알림">♧<i></i></button><button class="primary-button" id="upload-button">＋ 영수증 등록</button></div></header>
+        <header class="topbar"><div><p class="eyebrow" id="organization-label">한결 다이닝</p><h1 id="page-title">좋은 아침이에요, 민지님</h1></div><div class="top-actions"><button class="account-button" id="account-button" aria-label="계정">로그인</button><button class="icon-button" aria-label="알림">♧<i></i></button><button class="primary-button" id="upload-button">＋ 영수증 등록</button></div></header>
         <section id="page-content"></section>
       </main>
       <nav class="mobile-nav" aria-label="모바일 메뉴">
@@ -46,8 +47,29 @@
         <button class="primary-button wide" id="start-ocr" value="default" disabled>OCR 분석 시작</button>
       </form>
     </dialog>
+    <dialog id="auth-dialog" class="auth-dialog">
+      <form class="auth-card" id="auth-form">
+        <p class="eyebrow">OrderFit MVP</p><h2>관리자 로그인</h2><p class="muted">발주 기록과 영수증을 안전하게 관리합니다.</p>
+        <label>이메일<input id="auth-email" type="email" autocomplete="email" required placeholder="manager@restaurant.com" /></label>
+        <label>비밀번호<input id="auth-password" type="password" autocomplete="current-password" required minlength="8" placeholder="8자 이상" /></label>
+        <p class="auth-message" id="auth-message"></p>
+        <button class="primary-button wide" type="submit">로그인</button>
+        <button class="text-button wide" id="signup-button" type="button">새 관리자 계정 만들기</button>
+      </form>
+    </dialog>
+    <dialog id="organization-dialog" class="auth-dialog">
+      <form class="auth-card" id="organization-form">
+        <p class="eyebrow">첫 설정</p><h2>매장을 등록해 주세요</h2><p class="muted">등록한 매장 구성원만 발주 영수증을 확인할 수 있습니다.</p>
+        <label>매장명<input id="organization-name" required placeholder="예: 한결 다이닝" /></label>
+        <p class="auth-message" id="organization-message"></p>
+        <button class="primary-button wide" type="submit">매장 생성 및 시작</button>
+      </form>
+    </dialog>
+    <div class="mvp-toast" id="mvp-toast" role="status"></div>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="src/app.js"></script>
     <script src="src/details.js"></script>
     <script src="src/receipt-workflow.js"></script>
+    <script src="src/mvp-backend.js"></script>
   </body>
 </html>

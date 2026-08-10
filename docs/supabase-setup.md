@@ -39,6 +39,16 @@ SUPABASE_PUBLISHABLE_KEY=<publishable-or-anon-key>
 SUPABASE_SERVICE_ROLE_KEY=<server-only>
 ```
 
+## Auth 리디렉션 설정
+
+Supabase Dashboard → Authentication → URL Configuration에서 현재 OrderFit 도메인을 **Additional Redirect URLs**에 추가한다.
+
+```text
+https://orderfit-omega.vercel.app
+```
+
+기존 `bro-gym`의 Site URL은 그대로 유지한다. OrderFit 회원가입은 `emailRedirectTo`로 현재 OrderFit 도메인을 요청하므로, 위 URL만 추가하면 기존 서비스의 기본 인증 흐름을 바꾸지 않는다.
+
 ## 영수증 처리 흐름
 
 1. 로그인한 사용자가 `timefit_receipts/<organization-id>/<receipt-id>/original.jpg`에 사진을 업로드한다.
